@@ -11,7 +11,7 @@ if (!base) { server = spawn('python3', ['-m', 'http.server', '18755', '--bind', 
 const NOW = '2026-11-03T10:00:00+01:00';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const results = []; const ok = (n, x = '') => { results.push(n); console.log(`✓ ${n}${x ? ' – ' + x : ''}`); };
-const shot = (page, name, full = false) => page.screenshot({ path: path.join(SCREENS, name), fullPage: full });
+const shot = async (page, name, full = false) => { await page.evaluate(() => { document.querySelectorAll('.toast').forEach(t => t.remove()); scrollTo(0, 0); }); await page.mouse.move(1, 1); await page.waitForTimeout(80); return page.screenshot({ path: path.join(SCREENS, name), fullPage: full }); };
 
 async function newPage(vp, ctxOpts = {}) {
   const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 2, locale: 'de-DE', timezoneId: 'Europe/Berlin', ...ctxOpts });
@@ -62,26 +62,64 @@ try {
   await page.waitForSelector('h1:has-text("Fukientee Carmona")');
   ok('Baum bearbeitet');
 
-  // Start: Monatsaufgaben
+  // Start: Baumzeilen, standardmäßig zugeklappt
   await page.goto(base + '#/');
-  await page.waitForSelector('.tree-card');
-  assert.equal(await page.locator('.tree-card').count(), 4);
+  await page.waitForSelector('.trow');
+  assert.equal(await page.locator('.trow').count(), 4);
   assert.match(await page.textContent('h1'), /November/);
-  const ahorn = page.locator('.tree-card', { hasText: 'Kleiner Ahorn' });
+  assert.equal(await page.locator('.trow.open').count(), 0);
+  assert.equal(await page.locator('.trow-head[aria-expanded=true]').count(), 0);
+  const ahorn = page.locator('.trow', { hasText: 'Kleiner Ahorn' });
+  assert.equal(await ahorn.locator('.trow-panel').evaluate(e => Math.round(e.getBoundingClientRect().height)), 0);
+  assert.ok(await ahorn.locator('.trow-panel').evaluate(e => e.inert));
+  const total = await ahorn.locator('.task').count();
+  assert.equal((await ahorn.locator('.count').textContent()).trim(), `${total} offen`);
+  ok('Baumzeilen zugeklappt mit Zähler', `${total} offen`);
+  await shot(page, '20_heute_zeilen.png');
+  // Aufklappen
+  await ahorn.locator('.trow-head').click(); await page.waitForTimeout(400);
+  assert.equal(await ahorn.locator('.trow-head').getAttribute('aria-expanded'), 'true');
+  assert.ok(await ahorn.locator('.trow-panel').evaluate(e => e.getBoundingClientRect().height > 80 && !e.inert));
   const types = await ahorn.locator('.task').evaluateAll(xs => xs.map(x => x.dataset.type));
   assert.ok(types.includes('giessen') && types.includes('standort'), types.join());
   assert.match(await ahorn.locator('.task[data-type=giessen]').textContent(), /wenig gießen/);
-  ok('Monatsaufgaben November', types.join(', '));
+  assert.equal(await ahorn.locator('.task .ticon svg').count(), total);
+  ok('Aufklappen zeigt Pflegeschritte mit Symbolen', types.join(', '));
+  // Mehrere gleichzeitig offen
+  const kiefer = page.locator('.trow', { hasText: 'Waldkiefer' });
+  await kiefer.locator('.trow-head').click(); await page.waitForTimeout(400);
+  assert.equal(await page.locator('.trow.open').count(), 2);
+  // Abhaken im Dropdown: Zähler sinkt, Zeile bleibt offen
   await ahorn.locator('.tick').first().click();
-  await page.reload(); await page.waitForSelector('.tree-card');
-  assert.equal(await page.locator('.tree-card', { hasText: 'Kleiner Ahorn' }).locator('.tick[aria-pressed=true]').count(), 1);
-  assert.match(await page.locator('.tree-card', { hasText: 'Kleiner Ahorn' }).locator('.progress').textContent(), /^1 von/);
-  ok('Abhaken bleibt nach Neuladen erhalten');
+  await page.waitForFunction(() => document.querySelector('.trow[data-tree] .tick[aria-pressed=true]'));
+  assert.equal((await ahorn.locator('.count').textContent()).trim(), `${total - 1} offen`);
+  assert.equal(await ahorn.locator('.trow-head').getAttribute('aria-expanded'), 'true');
+  ok('Abhaken im Dropdown, Zähler aktualisiert, Zeile bleibt offen');
+  await kiefer.locator('.trow-head').click(); await page.waitForTimeout(400);
+  await shot(page, '21_heute_aufgeklappt.png');
+  // Zuklappen
+  await ahorn.locator('.trow-head').click(); await page.waitForTimeout(400);
+  assert.equal(await ahorn.locator('.trow-head').getAttribute('aria-expanded'), 'false');
+  assert.equal(await ahorn.locator('.trow-panel').evaluate(e => Math.round(e.getBoundingClientRect().height)), 0);
+  ok('Zuklappen');
+  // Tastatur
+  await ahorn.locator('.trow-head').focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(350);
+  assert.equal(await ahorn.locator('.trow-head').getAttribute('aria-expanded'), 'true');
+  await page.keyboard.press('Space'); await page.waitForTimeout(350);
+  assert.equal(await ahorn.locator('.trow-head').getAttribute('aria-expanded'), 'false');
+  ok('Auf- und Zuklappen per Tastatur');
+  await page.reload(); await page.waitForSelector('.trow');
+  assert.equal(await page.locator('.trow.open').count(), 0);
+  await ahorn.locator('.trow-head').click(); await page.waitForTimeout(350);
+  assert.equal(await ahorn.locator('.tick[aria-pressed=true]').count(), 1);
+  assert.match(await ahorn.locator('.count').textContent(), new RegExp(`${total - 1} offen`));
+  ok('Abhaken bleibt nach Neuladen erhalten, Zeilen nach Neuladen zu');
   await shot(page, '01_start_monat.png');
   // Monatsnavigation
   await page.click('[aria-label="Nächster Monat"]');
   await page.waitForSelector('h1:has-text("Dezember 2026")');
-  assert.equal(await page.locator('.tree-card', { hasText: 'Kleiner Ahorn' }).locator('.tick[aria-pressed=true]').count(), 0);
+  await page.locator('.trow', { hasText: 'Kleiner Ahorn' }).locator('.trow-head').click(); await page.waitForTimeout(350);
+  assert.equal(await page.locator('.trow', { hasText: 'Kleiner Ahorn' }).locator('.tick[aria-pressed=true]').count(), 0);
   ok('Monatsnavigation, Häkchen gelten je Monat');
   // Woche
   await page.goto(base + '#/'); await page.click('[data-mode=woche]');
@@ -90,11 +128,19 @@ try {
   ok('Wochenansicht mit Hinweis');
   await page.click('[data-mode=monat]');
 
-  // Meine Bäume
-  await page.goto(base + '#/baeume'); await page.waitForSelector('.list');
-  assert.equal(await page.locator('.list li').count(), 4);
+  // Meine Bäume: Zeilen, aufgeklappt Monatsschritte + Bearbeiten
+  await page.goto(base + '#/baeume'); await page.waitForSelector('.trows');
+  assert.equal(await page.locator('.trow').count(), 4);
+  assert.equal(await page.locator('.trow.open').count(), 0);
   await shot(page, '02_meine_baeume.png');
-  ok('Liste Meine Bäume');
+  const mrow = page.locator('.trow', { hasText: 'Kleiner Ahorn' });
+  await mrow.locator('.trow-head').click(); await page.waitForTimeout(400);
+  assert.match(await mrow.locator('.trow-label').textContent(), /November/);
+  assert.ok(await mrow.locator('.task').count() > 0);
+  assert.equal(await mrow.locator('.tick[aria-pressed=true]').count(), 1);
+  await shot(page, '22_meine_baeume_zeilen.png');
+  await mrow.locator('a:has-text("Bearbeiten")').click(); await page.waitForSelector('#treeform');
+  ok('Meine Bäume: Zeilen, Monatsschritte im Dropdown, Bearbeiten');
 
   // Jahresübersicht
   await page.goto(base + '#/art/faecherahorn'); await page.waitForSelector('.yeargrid');
@@ -138,16 +184,16 @@ try {
   page.once('dialog', d => d.accept());
   const wid = await page.evaluate(() => JSON.parse(localStorage.getItem('bonsaijahr.trees')).find(t => t.name.startsWith('Waldkiefer')).id);
   await page.goto(base + `#/baum/${wid}/bearbeiten`); await page.click('#treedel');
-  await page.waitForSelector('.list'); assert.equal(await page.locator('.list li').count(), 3);
+  await page.waitForSelector('.trows'); assert.equal(await page.locator('.trow').count(), 3);
   ok('Baum gelöscht');
 
   // Offline
   await page.goto(base + '#/');
   await page.evaluate(async () => { const r = await navigator.serviceWorker.ready; return !!r.active; });
-  await page.reload(); await page.waitForSelector('.tree-card');
+  await page.reload(); await page.waitForSelector('.trow');
   await page.waitForFunction(() => navigator.serviceWorker.controller);
   await ctx.setOffline(true);
-  await page.reload(); await page.waitForSelector('.tree-card');
+  await page.reload(); await page.waitForSelector('.trow');
   await page.goto(base + '#/art/zierquitte'); await page.waitForSelector('.yeargrid');
   const ff = await page.evaluate(() => document.fonts.check('16px Inter'));
   ok('Offline: Start und Art laden aus dem Cache', `Schrift geladen: ${ff}`);
@@ -164,7 +210,7 @@ try {
     await page.goto(base); const aid = await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('bonsaijahr.trees')); return t.find(x => x.name === 'Kleiner Ahorn').id; });
     await page.goto(base + `#/baum/${aid}/bearbeiten`); await page.setInputFiles('#f-photo', path.join(ROOT, 'tests/fixtures/baum.jpg'));
     await page.waitForSelector('#photoprev:not([hidden]) img'); await page.click('button[type=submit]'); await page.waitForSelector('.hero-photo');
-    await page.goto(base + '#/'); await page.waitForSelector('.tree-card .avatar img'); await page.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove())); await page.waitForTimeout(300);
+    await page.goto(base + '#/'); await page.waitForSelector('.trow .avatar img'); await page.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove())); await page.locator('.trow-head').first().click(); await page.waitForTimeout(300);
     await shot(page, '07_desktop.png');
     await ctx.close();
   }
@@ -179,6 +225,8 @@ try {
     for (const r0 of ROUTES) {
       const r = r0 === 'TREE' ? `#/baum/${tid}` : r0;
       await page.goto(base + r); await page.waitForSelector('main .pagehead'); await page.waitForTimeout(120);
+      for (const expand of (r0 === '#/' || r0 === '#/baeume' || r0 === '#/?modus=woche') ? [false, true] : [false]) {
+      if (expand) { for (const h of await page.locator('.trow-head').all()) if (await h.getAttribute('aria-expanded') === 'false') await h.click(); await page.waitForTimeout(400); }
       const bad = await page.evaluate(() => {
         const out = [], vw = document.documentElement.clientWidth;
         if (document.documentElement.scrollWidth > vw + 1) out.push(`horizontaler Überlauf ${document.documentElement.scrollWidth}>${vw}`);
@@ -186,7 +234,7 @@ try {
           const b = e.getBoundingClientRect(); if (!b.width || getComputedStyle(e).position === 'absolute' || e.closest('.sr-only')) continue;
           if (b.right > vw + 1 || b.left < -1) out.push(`${e.tagName}.${e.className?.baseVal ?? e.className} ragt raus (${Math.round(b.left)}–${Math.round(b.right)})`);
         }
-        const groups = ['.task > *', '.tree-head > *', '.nav > a', '.monthbar > *', '.pagehead.between > *', '.form .actions > *, .form .actions .r > *', '.list a > *', '.chips > *', '.yeargrid thead th'];
+        const groups = ['.task > *', '.trow-head > *', '.trow-actions > *', '.nav > a', '.monthbar > *', '.pagehead.between > *', '.form .actions > *, .form .actions .r > *', '.list a > *', '.chips > *', '.yeargrid thead th'];
         for (const g of groups) for (const parent of new Set([...document.querySelectorAll(g)].map(e => e.parentElement))) {
           const kids = [...parent.children].filter(k => k.matches(g) && k.getBoundingClientRect().width);
           for (let i = 0; i < kids.length; i++) for (let j = i + 1; j < kids.length; j++) {
@@ -198,7 +246,8 @@ try {
         for (const e of document.querySelectorAll('.btn, .chip, .seg button, .nav a span, .yeargrid .rl span:not(.sr-only)')) if (e.scrollWidth > e.clientWidth + 1) out.push(`Text abgeschnitten: ${e.textContent.trim().slice(0, 30)}`);
         return [...new Set(out)];
       });
-      if (bad.length) problems.push(`${w}×${h} ${r}: ${bad.slice(0, 6).join(' | ')}`);
+      if (bad.length) problems.push(`${w}×${h} ${r}${expand ? ' (aufgeklappt)' : ''}: ${bad.slice(0, 6).join(' | ')}`);
+      }
       await page.evaluate(() => scrollTo(0, 0));
       if (w === 360 && r0 === '#/art/faecherahorn') await shot(page, 'layout_360_jahresuebersicht.png');
       if (w === 360 && r0 === '#/') await shot(page, 'layout_360_start.png');

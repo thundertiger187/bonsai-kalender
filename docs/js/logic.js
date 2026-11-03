@@ -135,3 +135,15 @@ export function cleanTree(t, speciesIds) {
   return { id: t.id || `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, speciesId: t.speciesId,
     variant: t.variant || null, notes: String(t.notes || '').slice(0, 2000), year: y, hasPhoto: !!t.hasPhoto, created: t.created || new Date().toISOString() };
 }
+
+// Aufgaben eines Baums für einen oder mehrere Monate inkl. Erledigt-Zählung (für die Baumzeilen).
+export function treeTasks(species, tree, periods, done = {}) {
+  const items = []; let n = 0;
+  for (const p of periods) for (const t of tasksForMonth(species, p.month, tree.variant)) {
+    const key = doneKey(tree.id, p.year, p.month, t.key), isDone = !!done[key];
+    if (isDone) n++;
+    items.push({ task: t, year: p.year, month: p.month, key, done: isDone });
+  }
+  return { items, total: items.length, done: n, open: items.length - n };
+}
+export const openLabel = s => !s.total ? 'Keine Arbeiten' : s.open === 0 ? 'Alles erledigt' : `${s.open} offen`;

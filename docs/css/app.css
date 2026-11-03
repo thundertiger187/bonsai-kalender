@@ -53,7 +53,7 @@ main { max-width: 760px; margin: 0 auto; padding: 8px 18px 40px; outline: none; 
 }
 @media (min-width: 1100px) {
   main { max-width: 1120px; }
-  main:has(.yeargrid), main:has(.form), main:has(.prose) { max-width: 880px; }
+  main:has(.yeargrid), main:has(.form), main:has(.prose), main:has(.trows) { max-width: 880px; }
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; }
 }
 #f-photo:focus-visible + label { outline: 2px solid var(--moss); outline-offset: 2px; }
@@ -215,3 +215,32 @@ dl.facts dd { margin: 0; overflow-wrap: anywhere; }
 .infohead { display: flex; align-items: center; gap: 1rem; }
 .infohead img { width: 96px; height: 96px; flex: none; }
 @media (max-width: 480px) { .infohead img { width: 72px; height: 72px; } }
+
+/* Baumzeilen mit aufklappbaren Pflegeschritten */
+.trows { list-style: none; margin: 0 0 1rem; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.trow + .trow { border-top: 1px solid var(--line); }
+.trow-head { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: .75rem; padding: 10px 14px; min-height: 64px; cursor: pointer; color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.trow-head:hover { background: color-mix(in srgb, var(--sunk) 45%, var(--surface)); }
+.trow-head:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
+.trow .avatar { width: 42px; height: 42px; border-radius: 11px; }
+.trow .ini { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; color: var(--moss); }
+.trow-head .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.trow-head .name { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow-head .species { color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.count { flex: none; display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; font-weight: 600; color: var(--moss-d); background: var(--sage-l); border-radius: 999px; padding: .2rem .6rem; white-space: nowrap; }
+.count.ok { background: transparent; color: var(--moss); font-weight: 500; }
+.count.none { background: transparent; color: var(--faint); font-weight: 500; }
+.count svg { width: 14px; height: 14px; stroke-width: 2.4; }
+.trow .chev { flex: none; width: 20px; height: 20px; color: var(--faint); transition: transform .25s ease; }
+.trow.open .chev { transform: rotate(180deg); }
+.trow-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s ease; }
+.trow.open .trow-panel { grid-template-rows: 1fr; }
+.trow-inner { overflow: hidden; min-height: 0; }
+.trow.open .trow-inner { border-top: 1px dashed var(--line); }
+.trow-label { padding: 10px 16px 0; font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.trow-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; padding: 4px 12px 12px; }
+.btn.small { min-height: 38px; padding: 0 .85rem; font-size: .88rem; }
+.btn.small svg { width: 16px; height: 16px; }
+.trow .upcoming { border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .trow-panel, .trow .chev { transition: none; } }
+@media (max-width: 400px) { .trow-head { gap: .6rem; padding: 10px 12px; } .count { padding: .2rem .5rem; } }

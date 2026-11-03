@@ -11,10 +11,10 @@ await p.setContent(`<body style="margin:0;padding:20px;background:#ccc;display:f
 await p.screenshot({ path: path.join(ROOT, 'screens/10_logo_header.png'), fullPage: true });
 const u = f => `data:image/${f.endsWith('svg') ? 'svg+xml' : 'png'};base64,` + fs.readFileSync(path.join(ROOT, 'docs/icons', f)).toString('base64');
 await p.setContent(`<body style="margin:0;padding:30px;background:#fff;font:14px sans-serif;display:flex;gap:40px;align-items:flex-end">
-<figure><img src="${u('icon-192.png')}"><figcaption>icon-192.png</figcaption></figure>
-<figure><img src="${u('maskable-512.png')}" width="256" style="border-radius:50%"><figcaption>maskable (Kreis-Maske)</figcaption></figure>
-<figure><img src="${u('maskable-512.png')}" width="256" style="border-radius:22%"><figcaption>maskable (Squircle)</figcaption></figure>
-<figure><img src="${u('apple-touch-icon.png')}"><figcaption>apple-touch-icon</figcaption></figure>
-<figure><img src="${u('favicon-32.png')}"> <img src="${u('favicon.svg')}" width="16"><figcaption>favicon 32 / 16</figcaption></figure></body>`);
+<figure><img src="${u('icon-192-v2.png')}"><figcaption>icon-192.png</figcaption></figure>
+<figure><img src="${u('maskable-512-v2.png')}" width="256" style="border-radius:50%"><figcaption>maskable (Kreis-Maske)</figcaption></figure>
+<figure><img src="${u('maskable-512-v2.png')}" width="256" style="border-radius:22%"><figcaption>maskable (Squircle)</figcaption></figure>
+<figure><img src="${u('apple-touch-icon-v2.png')}"><figcaption>apple-touch-icon</figcaption></figure>
+<figure><img src="${u('favicon-32-v2.png')}"> <img src="${u('favicon-v2.svg')}" width="16"><figcaption>favicon 32 / 16</figcaption></figure></body>`);
 await p.setViewportSize({ width: 1000, height: 330 }); await p.waitForTimeout(500); await p.screenshot({ path: path.join(ROOT, 'screens/11_icon_preview.png'), fullPage: true });
 await b.close(); srv.kill();

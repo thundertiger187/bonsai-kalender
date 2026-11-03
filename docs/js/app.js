@@ -1,5 +1,5 @@
 import { MONTHS, MONTHS_SHORT, TYPE_LABEL, LIGHT_LABEL, tasksForMonth, generalRows, upcomingTasks, weekOf, daysLeftInMonth,
-  doneKey, searchSpecies, cleanTree, variantOf, rowActive, rowLabel } from './logic.js';
+  doneKey, searchSpecies, cleanTree, variantOf, rowActive, rowLabel, treeTasks, openLabel } from './logic.js';
 import * as store from './store.js';
 
 const view = document.getElementById('view');
@@ -51,6 +51,28 @@ function taskItem(t, { tree, year, month, showMonth, done } = {}) {
   </li>`;
 }
 
+// ---------- Baumzeile mit aufklappbaren Pflegeschritten ----------
+const openRows = new Set();   // in dieser Sitzung aufgeklappte Bäume (beim Start alle zu)
+const avatar = t => `<span class="avatar" data-photo="${t.id}"><span class="ini">${esc((t.name.trim()[0] || '?').toUpperCase())}</span></span>`;
+function treeRow(tree, sp, periods, done, { upcoming = '', actions = '', sub = '', label = '' } = {}) {
+  const s = treeTasks(sp, tree, periods, done), open = openRows.has(tree.id), pid = `tp-${tree.id}`;
+  const items = s.items.map(i => taskItem(i.task, { tree, year: i.year, month: i.month, showMonth: periods.length > 1, done }));
+  return `<li class="trow${open ? ' open' : ''}" data-tree="${tree.id}">
+    <button class="trow-head" type="button" aria-expanded="${open}" aria-controls="${pid}" data-row="${tree.id}">
+      ${avatar(tree)}
+      <span class="t"><span class="name">${esc(tree.name)}</span><span class="species">${speciesLine(sp, tree.variant)}${sub}</span></span>
+      <span class="count${s.total && !s.open ? ' ok' : ''}${!s.total ? ' none' : ''}">${s.total && !s.open ? icon('check') : ''}${openLabel(s)}</span>
+      ${icon('down', 'chev')}
+    </button>
+    <div class="trow-panel" id="${pid}" role="region" aria-label="Pflegeschritte ${esc(tree.name)}"${open ? '' : ' inert'}><div class="trow-inner">
+      ${label ? `<div class="trow-label">Pflegeschritte im ${label}</div>` : ''}
+      ${items.length ? `<ul class="tasks">${items.join('')}</ul>` : `<p class="empty-tasks">Für ${periods.map(p => MONTHS[p.month - 1]).join(' / ')} sind im Pflegekalender keine Arbeiten markiert.</p>`}
+      ${upcoming}
+      ${actions ? `<div class="trow-actions">${actions}</div>` : ''}
+    </div></div>
+  </li>`;
+}
+
 // ---------- Start ----------
 function renderStart(params) {
   const now = today();
@@ -91,40 +113,27 @@ function renderStart(params) {
       <div class="actions"><a class="btn primary" href="#/baum/neu">${icon('plus')}Baum anlegen</a><a class="btn" href="#/arten">Arten ansehen</a></div>
     </section>`;
   }
-  const cards = '<div class="cards">' + trees.map(tree => {
+  const rows = `<ul class="trows">${trees.map(tree => {
     const sp = SPECIES[tree.speciesId];
-    let items = [], total = 0, n = 0;
-    for (const p of periods) {
-      const ts = tasksForMonth(sp, p.month, tree.variant);
-      for (const t of ts) { total++; if (done[doneKey(tree.id, p.year, p.month, t.key)]) n++; }
-      items.push(...ts.map(t => taskItem(t, { tree, year: p.year, month: p.month, showMonth: periods.length > 1, done })));
-    }
     let upcoming = '';
     if (isCurrent && daysLeftInMonth(now) < 7) {
       const up = upcomingTasks(sp, now.getMonth() + 1, tree.variant);
       if (up.length) upcoming = `<div class="upcoming"><b>Ab ${MONTHS[now.getMonth() + 1 > 11 ? 0 : now.getMonth() + 1]} neu:</b> ${up.map(t => esc(t.label)).join(', ')}</div>`;
     }
-    const pct = total ? Math.round(100 * n / total) : 0;
-    return `<article class="card tree-card" data-tree="${tree.id}">
-      <a class="tree-head" href="#/baum/${tree.id}">
-        <span class="avatar" data-photo="${tree.id}">${icon('baum')}</span>
-        <span class="t"><span class="name">${esc(tree.name)}</span><br><span class="species">${speciesLine(sp, tree.variant)}</span></span>
-        ${total ? `<span class="progress">${n} von ${total}<span class="bar"><i style="width:${pct}%"></i></span></span>` : ''}
-      </a>
-      ${items.length ? `<ul class="tasks">${items.join('')}</ul>` : `<p class="empty-tasks">Für ${periods.map(p => MONTHS[p.month - 1]).join(' / ')} sind im Pflegekalender keine Arbeiten markiert.</p>`}
-      ${upcoming}
-    </article>`;
-  }).join('') + '</div>';
-  return head + cards + `<p class="small muted">Pflegeschritte nach den Pflegekalendern des <a href="#/info">Bonsai-Arbeitskreises Hildesheim</a> (USDA-Klimazone 7b).</p>`;
+    return treeRow(tree, sp, periods, done, { upcoming, actions: `<a class="btn small ghost" href="#/baum/${tree.id}">Baum öffnen${icon('right')}</a>` });
+  }).join('')}</ul>`;
+  return head + rows + `<p class="small muted">Pflegeschritte nach den Pflegekalendern des <a href="#/info">Bonsai-Arbeitskreises Hildesheim</a> (USDA-Klimazone 7b).</p>`;
 }
 
 // ---------- Bäume ----------
 function renderTrees() {
   const trees = store.getTrees();
-  const list = trees.length ? `<ul class="list">${trees.map(t => {
+  const now = today(), done = store.getDone(), periods = [{ year: now.getFullYear(), month: now.getMonth() + 1 }];
+  const list = trees.length ? `<ul class="trows">${trees.map(t => {
     const sp = SPECIES[t.speciesId];
-    return `<li><a href="#/baum/${t.id}"><span class="avatar" data-photo="${t.id}">${icon('baum')}</span>
-      <span class="t"><span class="n">${esc(t.name)}</span><br><span class="s">${sp ? speciesLine(sp, t.variant) : 'Art nicht mehr vorhanden'}${t.year ? ` · seit ${t.year}` : ''}</span></span>${icon('right', 'go')}</a></li>`;
+    if (!sp) return `<li class="trow"><a class="trow-head" href="#/baum/${t.id}">${avatar(t)}<span class="t"><span class="name">${esc(t.name)}</span><span class="species">Art nicht mehr vorhanden</span></span>${icon('right', 'chev')}</a></li>`;
+    return treeRow(t, sp, periods, done, { sub: t.year ? ` · seit ${t.year}` : '', label: MONTHS[now.getMonth()],
+      actions: `<a class="btn small ghost" href="#/baum/${t.id}">Pflegejahr${icon('right')}</a><a class="btn small" href="#/baum/${t.id}/bearbeiten">Bearbeiten</a>` });
   }).join('')}</ul>` : `<section class="card"><p class="muted">Du hast noch keine Bäume angelegt.</p><a class="btn primary" href="#/baum/neu">${icon('plus')}Ersten Baum anlegen</a></section>`;
   return `<div class="pagehead between"><div><h1>Meine Bäume</h1><div class="sub">${trees.length} ${trees.length === 1 ? 'Baum' : 'Bäume'} · lokal auf diesem Gerät gespeichert</div></div>
     ${trees.length ? `<a class="btn primary" href="#/baum/neu" aria-label="Baum anlegen">${icon('plus')}<span>Neu</span></a>` : ''}</div>${list}`;
@@ -274,7 +283,7 @@ function renderInfo() {
   </section>
   <section class="card prose"><h2>Installieren</h2>
     <p>Im Browser-Menü „Zum Startbildschirm hinzufügen“ bzw. „App installieren“ wählen. Danach funktioniert Bonsaijahr auch offline.</p>
-    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.1.0.</p>
+    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.2.0.</p>
   </section>`;
 }
 const notFound = () => `<div class="pagehead"><h1>Nicht gefunden</h1></div><p><a href="#/">Zur Startseite</a></p>`;
@@ -310,6 +319,14 @@ view.addEventListener('click', async e => {
     const on = tick.getAttribute('aria-pressed') !== 'true';
     store.setDone(tick.dataset.done, on);
     const y = window.scrollY; await route(); window.scrollTo(0, y); return;
+  }
+  const row = e.target.closest('[data-row]');
+  if (row) {
+    const li = row.closest('.trow'), open = !li.classList.contains('open');
+    li.classList.toggle('open', open); row.setAttribute('aria-expanded', open);
+    li.querySelector('.trow-panel').inert = !open;
+    open ? openRows.add(row.dataset.row) : openRows.delete(row.dataset.row);
+    return;
   }
   const mode = e.target.closest('[data-mode]');
   if (mode) { store.setPref('mode', mode.dataset.mode); location.hash = '#/'; route(); return; }
@@ -408,6 +425,6 @@ async function init() {
   } catch { view.innerHTML = '<p class="loading">Daten konnten nicht geladen werden. Bitte einmal online öffnen.</p>'; return; }
   for (const s of DATA.species) SPECIES[s.id] = s;
   route();
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 }
 init();

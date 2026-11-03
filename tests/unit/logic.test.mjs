@@ -98,3 +98,20 @@ test('Baum-Validierung', () => {
 test('Jede Art hat in mindestens einem Monat Arbeiten', () => {
   for (const s of DATA.species) assert.ok([...Array(12)].some((_, i) => tasksForMonth(s, i + 1).length), s.id);
 });
+
+test('treeTasks/openLabel: Zählung offen/erledigt je Baum und Zeitraum', async () => {
+  const { treeTasks, openLabel } = await import('../../docs/js/logic.js');
+  const sp = DATA.species.find(s => s.variants.length === 1 && tasksForMonth(s, 4).length >= 2);
+  const tree = { id: 't1', variant: null };
+  const per = [{ year: 2026, month: 4 }];
+  const a = treeTasks(sp, tree, per, {});
+  assert.equal(a.total, tasksForMonth(sp, 4).length); assert.equal(a.open, a.total); assert.equal(openLabel(a), `${a.total} offen`);
+  const done = { [a.items[0].key]: true };
+  const b = treeTasks(sp, tree, per, done);
+  assert.equal(b.done, 1); assert.equal(b.open, a.total - 1); assert.ok(b.items[0].done);
+  const all = Object.fromEntries(a.items.map(i => [i.key, true]));
+  assert.equal(openLabel(treeTasks(sp, tree, per, all)), 'Alles erledigt');
+  assert.equal(openLabel({ total: 0, open: 0 }), 'Keine Arbeiten');
+  const two = treeTasks(sp, tree, [{ year: 2026, month: 4 }, { year: 2026, month: 5 }], {});
+  assert.equal(two.total, tasksForMonth(sp, 4).length + tasksForMonth(sp, 5).length);
+});
