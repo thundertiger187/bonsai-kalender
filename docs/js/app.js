@@ -252,7 +252,7 @@ function renderSpecies(id, params) {
 
 // ---------- Info ----------
 function renderInfo() {
-  return `<div class="pagehead"><h1>Info</h1></div>
+  return `<div class="pagehead infohead"><img src="icons/logo.svg" alt="" width="96" height="96"><h1>Info</h1></div>
   <section class="card prose"><h2>Quelle</h2>
     <p>Alle Pflegeangaben stammen aus den Pflegekalendern des <b>Bonsai-Arbeitskreises Hildesheim</b>:<br>
     <a href="${esc(DATA.source.page)}" target="_blank" rel="noopener">Pflegekalender über das Jahr ${icon('ext')}</a></p>
@@ -274,7 +274,7 @@ function renderInfo() {
   </section>
   <section class="card prose"><h2>Installieren</h2>
     <p>Im Browser-Menü „Zum Startbildschirm hinzufügen“ bzw. „App installieren“ wählen. Danach funktioniert Bonsaijahr auch offline.</p>
-    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.0.0.</p>
+    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.1.0.</p>
   </section>`;
 }
 const notFound = () => `<div class="pagehead"><h1>Nicht gefunden</h1></div><p><a href="#/">Zur Startseite</a></p>`;

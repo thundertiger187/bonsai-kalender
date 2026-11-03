@@ -1,7 +1,7 @@
 // Service Worker: App-Shell und Daten offline verfügbar (Cache zuerst, im Hintergrund aktualisieren).
-const VERSION = 'bonsaijahr-v1.0.0';
+const VERSION = 'bonsaijahr-v1.1.0';
 const ASSETS = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/logic.js', 'js/store.js', 'data/species.json', 'manifest.webmanifest',
-  'fonts/fraunces.woff2', 'fonts/inter.woff2', 'icons/logo.svg', 'icons/favicon.svg', 'icons/favicon-32.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
+  'fonts/fraunces.woff2', 'fonts/inter.woff2', 'icons/logo.svg', 'icons/logo-small.svg', 'icons/favicon.svg', 'icons/favicon-32.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
