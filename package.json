@@ -1,0 +1,14 @@
+{
+  "name": "bonsaijahr",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bonsai-Pflegekalender als PWA – Daten: Bonsai-Arbeitskreis Hildesheim",
+  "scripts": {
+    "test": "node --test tests/unit/*.test.mjs",
+    "e2e": "node tests/e2e.mjs",
+    "icons": "node tools/icons.mjs",
+    "serve": "python3 -m http.server 8080 -d docs"
+  },
+  "devDependencies": { "playwright": "1.64.1" }
+}

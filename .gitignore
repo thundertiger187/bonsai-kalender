@@ -1,0 +1,8 @@
+# Original-PDFs nicht veröffentlichen (Urheberrecht des Bonsai-Arbeitskreises Hildesheim)
+source-pdfs/
+*.pdf
+txt/
+build/
+page.html
+node_modules/
+__pycache__/

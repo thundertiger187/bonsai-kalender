@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bonsaijahr">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M262 376 C256 338 224 322 222 292 C220 262 262 254 270 222 C276 198 260 176 252 156" stroke="#6B4A33" stroke-width="30"/>
+    <path d="M226 286 C204 276 186 264 168 246" stroke="#6B4A33" stroke-width="15"/>
+    <path d="M268 226 C296 222 318 214 338 202" stroke="#6B4A33" stroke-width="13"/>
+  </g>
+  <g fill="#7E9C62">
+    <ellipse cx="158" cy="238" rx="70" ry="30"/><ellipse cx="128" cy="230" rx="38" ry="24"/><ellipse cx="186" cy="224" rx="40" ry="24"/>
+  </g>
+  <g fill="#6A8A4F">
+    <ellipse cx="346" cy="196" rx="74" ry="30"/><ellipse cx="318" cy="182" rx="40" ry="24"/><ellipse cx="378" cy="184" rx="38" ry="22"/>
+  </g>
+  <g fill="#557440">
+    <ellipse cx="252" cy="134" rx="88" ry="38"/><ellipse cx="218" cy="116" rx="46" ry="30"/><ellipse cx="282" cy="110" rx="50" ry="32"/><ellipse cx="252" cy="96" rx="34" ry="24"/>
+  </g>
+  <g fill="none" stroke="#B5C99E" stroke-width="6" stroke-linecap="round" opacity=".7">
+    <path d="M206 100 Q230 88 256 92"/><path d="M318 172 Q338 164 358 168"/><path d="M118 220 Q136 212 156 214"/>
+  </g>
+  <path d="M224 378 C238 373 248 368 250 358 L270 358 C273 368 282 373 298 378 Z" fill="#6B4A33"/>
+  <path d="M100 372 H412 A8 8 0 0 1 412 388 H100 A8 8 0 0 1 100 372 Z" fill="#8E5536"/>
+  <path d="M112 388 H400 L384 428 Q382 434 374 434 H138 Q130 434 128 428 Z" fill="#A9673F"/>
+  <path d="M150 434 h34 v10 h-34 z M328 434 h34 v10 h-34 z" fill="#8E5536"/>
+</svg>
