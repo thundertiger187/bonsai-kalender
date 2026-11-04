@@ -1,7 +1,7 @@
 // Service Worker: App-Shell und Daten offline verfügbar.
 // Seite und Manifest: Netz zuerst (damit neue Icons/Manifest-Änderungen sofort ankommen), sonst Cache.
 // Übrige Dateien: Cache zuerst, im Hintergrund aktualisieren.
-const VERSION = 'bonsaijahr-v1.2.0';
+const VERSION = 'bonsaijahr-v1.2.1';
 const ASSETS = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/logic.js', 'js/store.js', 'data/species.json', 'manifest.webmanifest',
   'fonts/fraunces.woff2', 'fonts/inter.woff2', 'icons/logo.svg', 'icons/logo-small.svg', 'icons/favicon-v2.svg', 'icons/favicon-32-v2.png',
   'icons/icon-192-v2.png', 'icons/icon-512-v2.png', 'icons/maskable-512-v2.png', 'icons/apple-touch-icon-v2.png'];

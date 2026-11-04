@@ -281,10 +281,24 @@ function renderInfo() {
     <div class="row" style="flex-wrap:wrap"><button class="btn" id="export">Bäume exportieren</button><label class="btn" for="import">Bäume importieren</label><input type="file" id="import" accept="application/json" hidden></div>
     <p class="small muted" style="margin-top:.6rem">Export und Import umfassen Bäume und Häkchen, keine Fotos.</p>
   </section>
-  <section class="card prose"><h2>Installieren</h2>
-    <p>Im Browser-Menü „Zum Startbildschirm hinzufügen“ bzw. „App installieren“ wählen. Danach funktioniert Bonsaijahr auch offline.</p>
-    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.2.0.</p>
+  <section class="card prose" id="install"><h2>Installieren</h2>
+    ${installHtml()}
+    <p class="small muted">Schriften: Fraunces und Inter (SIL Open Font License). Version 1.2.1.</p>
   </section>`;
+}
+// ---------- Installation (PWA) ----------
+let installEvt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (location.hash.startsWith('#/info')) route(); });
+addEventListener('appinstalled', () => { installEvt = null; if (location.hash.startsWith('#/info')) route(); });
+function installHtml() {
+  if (isStandalone()) return '<p>Bonsaijahr läuft als installierte App.</p>';
+  const btn = installEvt ? '<div class="row"><button class="btn primary" data-install>App installieren</button></div>' : '';
+  const steps = isIOS()
+    ? '<ol><li>In <b>Safari</b> öffnen.</li><li>Teilen-Symbol antippen.</li><li><b>„Zum Home-Bildschirm“</b> wählen.</li></ol>'
+    : '<ol><li>Ein altes Bonsaijahr-Symbol auf dem Startbildschirm zuerst entfernen (lange drücken → Entfernen).</li><li>Seite in <b>Chrome</b> öffnen und einmal neu laden.</li><li>Menü <b>⋮</b> → <b>„App installieren“</b> (bzw. „Zum Startbildschirm hinzufügen“ → „Installieren“, nicht „Verknüpfung erstellen“).</li></ol>';
+  return `${btn}${installEvt ? '<p class="small muted">Oder von Hand:</p>' : ''}${steps}<p>Danach öffnet sich Bonsaijahr ohne Adresszeile und funktioniert auch offline.</p>`;
 }
 const notFound = () => `<div class="pagehead"><h1>Nicht gefunden</h1></div><p><a href="#/">Zur Startseite</a></p>`;
 
@@ -314,6 +328,7 @@ async function route() {
 
 // ---------- Events ----------
 view.addEventListener('click', async e => {
+  if (e.target.closest('[data-install]') && installEvt) { const ev = installEvt; installEvt = null; ev.prompt(); try { await ev.userChoice; } catch {} await route(); return; }
   const tick = e.target.closest('[data-done]');
   if (tick) {
     const on = tick.getAttribute('aria-pressed') !== 'true';
